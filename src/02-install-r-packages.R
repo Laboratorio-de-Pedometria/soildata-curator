@@ -2,38 +2,30 @@
 # 02-install-r-packages.R
 # Installs the R packages required to interact with the local inference snap.
 #
-# The deepseek-r1 snap ships its own silicon-optimized runtime and exposes a
-# local OpenAI-compatible REST API. The API endpoint is discovered at runtime
-# via `deepseek-r1 status --format=json`, and requests are sent directly to
-# it — no cloud connection or separate Ollama installation is required.
+# The deepseek-r1 snap ships its own silicon-optimized runtime and is invoked
+# directly through its command-line interface (e.g. `deepseek-r1 chat`).
+# Prompts are fed via standard input redirection, exactly as in:
 #
-# The packages used are:
+#   deepseek-r1 chat < prompt_file.txt
 #
-#   processx  – spawn and control external processes from R, used here to call
-#               `deepseek-r1 status --format=json` and capture the API URL.
+# This is implemented in R using the built-in system() function, which
+# preserves the caller's controlling terminal — a requirement for the readline
+# library used by the snap's chat command. No additional R packages are needed
+# for snap interaction.
 #
-#   httr2     – modern HTTP client for R, used to call the snap's local
-#               OpenAI-compatible REST API.
-#
-#   jsonlite  – JSON parser, used to decode the status output and the API
-#               response from the local inference server.
-#
-# All packages are available on CRAN.
+# Other packages used in this project (e.g. data.table) should be installed
+# separately as needed.
 #
 # Requirements:
 #   - R (>= 4.0.0)
-#   - Internet access to reach a CRAN mirror (only needed during installation)
 #   - The deepseek-r1 inference snap installed locally (see src/01-install-snap.sh)
 #
 # Usage:
 #   Rscript src/02-install-r-packages.R
 
-# Packages required to interact with the deepseek-r1 inference snap
-pkgs <- c(
-  "processx",  # Spawn and control snap processes, capture their output
-  "httr2",     # HTTP client for calling the snap's local REST API
-  "jsonlite"   # JSON parsing for snap status output and API responses
-)
+# No additional R packages are required to call the deepseek-r1 snap CLI.
+# system() from base R is used to invoke `deepseek-r1 chat < prompt_file`.
+pkgs <- character(0L)
 
 # Install only packages that are not yet available in the current R library
 to_install <- pkgs[!vapply(pkgs, requireNamespace, logical(1L), quietly = TRUE)]
