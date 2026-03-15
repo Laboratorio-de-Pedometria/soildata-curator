@@ -496,3 +496,138 @@ check_depth_inversion <- function(data) {
   }
   return(invisible(inverted_depths))
 }
+
+# Compute summary of dataset variables (quantitative and qualitative) ##############################
+# This function computes a summary of the specified variables in a data.table containing soil data.
+# For quantitative (numeric) variables it calculates n, n_na, min, q25, median, mean, q75, and max.
+# For qualitative (character) variables it calculates n, n_na, the number of unique values, and,
+# when the number of unique non-NA values does not exceed ten, a frequency table.
+# x: data.table containing soil data
+# vars: character vector of variable names to summarise; when NULL all columns are summarised
+# Returns: data.table with one row per variable and columns:
+#   variable, type, n, n_na, summary
+# Example usage: variable_summary(ctb0093, vars = c("carbono", "estado_id"))
+variable_summary <- function(x, vars = NULL) {
+  # If vars is NULL, use all columns
+  if (is.null(vars)) {
+    vars <- names(x)
+  }
+  # Keep only vars that actually exist in x
+  vars <- intersect(vars, names(x))
+  # Compute summary for each variable
+  stats <- lapply(vars, function(col) {
+    vals <- x[[col]]
+    n_total <- length(vals)
+    n_na <- sum(is.na(vals))
+    n_valid <- n_total - n_na
+    if (is.numeric(vals)) {
+      # Quantitative summary
+      if (n_valid == 0) {
+        return(data.table::data.table(
+          variable = col, type = "quantitative", n = n_total, n_na = n_na,
+          summary = "all NA"
+        ))
+      }
+      vals_nona <- vals[!is.na(vals)]
+      summary_str <- paste0(
+        "min=", round(min(vals_nona), 2),
+        " q25=", round(as.numeric(quantile(vals_nona, 0.25)), 2),
+        " median=", round(median(vals_nona), 2),
+        " mean=", round(mean(vals_nona), 2),
+        " q75=", round(as.numeric(quantile(vals_nona, 0.75)), 2),
+        " max=", round(max(vals_nona), 2)
+      )
+      data.table::data.table(
+        variable = col, type = "quantitative", n = n_total, n_na = n_na,
+        summary = summary_str
+      )
+    } else {
+      # Qualitative summary
+      if (n_valid == 0) {
+        return(data.table::data.table(
+          variable = col, type = "qualitative", n = n_total, n_na = n_na,
+          summary = "all NA"
+        ))
+      }
+      vals_nona <- vals[!is.na(vals)]
+      n_unique <- length(unique(vals_nona))
+      if (n_unique <= 10) {
+        freq <- sort(table(vals_nona), decreasing = TRUE)
+        freq_str <- paste(
+          paste0(names(freq), " (", as.integer(freq), ")"),
+          collapse = "; "
+        )
+        summary_str <- paste0("unique=", n_unique, ": ", freq_str)
+      } else {
+        summary_str <- paste0("unique=", n_unique)
+      }
+      data.table::data.table(
+        variable = col, type = "qualitative", n = n_total, n_na = n_na,
+        summary = summary_str
+      )
+    }
+  })
+  result <- data.table::rbindlist(stats)
+  return(result)
+}
+
+# Enrich dataset description using DeepSeek R1 ####################################################
+# This function sends the current dataset description, a summary of the processed soil variables,
+# and an optional list of additional variable names to the local deepseek-r1 inference snap.
+# The model enriches the description by incorporating quantitative and qualitative information from
+# the summary, producing a more informative catalog entry for SoilData.
+# description: character string with the current dataset description
+# summary_data: data.table returned by variable_summary()
+# additional_vars: character vector of variable names not covered by summary_data (default NULL)
+# timeout: maximum time in seconds to wait for deepseek-r1 to respond (default is 300)
+# Returns: character string with the enriched dataset description (same language as the input,
+#          plain text only), or the original description if the deepseek-r1 snap is unavailable
+#          or returns an error.
+# Example usage:
+#   enrich_description(dataset_description, variable_summary(ctb0093, vars = processed_vars),
+#                      additional_vars = c("dataset_id", "dataset_titulo", "dataset_licenca"))
+enrich_description <- function(description, summary_data, additional_vars = NULL, timeout = 300) {
+  if (!requireNamespace("processx", quietly = TRUE)) {
+    warning("Package 'processx' is not installed. Returning original description unchanged.")
+    return(description)
+  }
+  # Format the summary data as a CSV-style plain-text table for consistent output
+  header <- paste(names(summary_data), collapse = ", ")
+  rows <- apply(summary_data, 1, function(r) paste(r, collapse = ", "))
+  summary_text <- paste(c(header, rows), collapse = "\n")
+  # Format the list of additional variables, if provided
+  additional_text <- ""
+  if (!is.null(additional_vars) && length(additional_vars) > 0) {
+    additional_text <- paste0(
+      "\n\nVariáveis adicionais contidas no conjunto de dados (sem sumário): ",
+      paste(additional_vars, collapse = ", ")
+    )
+  }
+  # Build the prompt
+  prompt <- paste0(
+    "Você é um especialista em pedologia e catalogação de dados de solos. ",
+    "A seguir, você receberá a descrição atual de um conjunto de dados de solos, um sumário ",
+    "das variáveis de solo processadas e uma lista de variáveis adicionais. ",
+    "Sua tarefa é enriquecer a descrição atual incorporando as informações quantitativas e ",
+    "qualitativas do sumário, produzindo uma descrição mais completa e informativa para ",
+    "catalogação no repositório SoilData.\n\n",
+    "Descrição atual:\n", description, "\n\n",
+    "Sumário das variáveis de solo processadas:\n", summary_text,
+    additional_text, "\n\n",
+    "Responda SOMENTE com o texto da descrição enriquecida, sem introduções, títulos, ",
+    "explicações ou qualquer outro texto adicional. Use o mesmo idioma da descrição atual."
+  )
+  # Call the deepseek-r1 snap via processx
+  result <- processx::run(
+    command = "deepseek-r1",
+    args = c("chat"),
+    stdin = prompt,
+    error_on_status = FALSE,
+    timeout = timeout
+  )
+  if (result$status != 0) {
+    warning("deepseek-r1 returned a non-zero exit status. Returning original description unchanged.")
+    return(description)
+  }
+  return(trimws(result$stdout))
+}
