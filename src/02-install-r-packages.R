@@ -1,27 +1,29 @@
 #!/usr/bin/env Rscript
 # 02-install-r-packages.R
-# Installs the R packages required to connect with the inference snap.
+# Installs the R packages required to interact with the local inference snap.
 #
-# The deepseek-r1 snap exposes an OpenAI-compatible REST API.  Two packages
-# are sufficient to interact with it from R:
+# The deepseek-r1 snap ships its own silicon-optimized runtime and is invoked
+# directly through its command-line interface (e.g. `deepseek-r1 chat`).
+# No separate Ollama installation or REST API is required.
 #
-#   httr      – send HTTP requests (GET/POST) to the API endpoint
-#   jsonlite  – encode request bodies and decode JSON responses
+# The processx package is used to call the snap CLI from R:
 #
-# Neither package belongs to the tidyverse.  Both are available on CRAN and
-# have minimal dependency trees, keeping the installation lightweight.
+#   processx  – spawn and control external processes from R, used here to send
+#               prompts to the deepseek-r1 snap and capture its output.
+#
+# processx is available on CRAN.
 #
 # Requirements:
 #   - R (>= 4.0.0)
 #   - Internet access to reach a CRAN mirror (only needed during installation)
+#   - The deepseek-r1 inference snap installed locally (see src/01-install-snap.sh)
 #
 # Usage:
 #   Rscript src/02-install-r-packages.R
 
-# Packages strictly required to communicate with the inference snap REST API
+# Package required to call the deepseek-r1 snap CLI directly from R
 pkgs <- c(
-  "httr",     # HTTP/1.1 client — POST to /v1/chat/completions, etc.
-  "jsonlite"  # Fast, standards-compliant JSON encoder/decoder
+  "processx"  # Spawn and control the snap process, capture its output
 )
 
 # Install only packages that are not yet available in the current R library
