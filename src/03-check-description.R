@@ -331,8 +331,9 @@ print(dataset_summary)
 additional_vars <- setdiff(names(ctb0093), c(processed_vars, "mid_depth"))
 
 # Enrich the dataset description using deepseek-r1
-dataset_description <- enrich_description(dataset_description, dataset_summary, additional_vars)
-
+dataset_description <- enrich_description(
+  description = dataset_description, summary_data = dataset_summary, additional_vars = additional_vars
+)
 
 
 
