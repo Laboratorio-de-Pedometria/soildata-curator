@@ -12,8 +12,8 @@ if (!requireNamespace("sf")) {
 if (!requireNamespace("mapview")) {
   install.packages("mapview")
 }
-if (!requireNamespace("parzer")) {
-  install.packages("parzer")
+if (!requireNamespace("httr2")) {
+  install.packages("httr2")
 }
 
 # Describe soil data ###############################################################################
