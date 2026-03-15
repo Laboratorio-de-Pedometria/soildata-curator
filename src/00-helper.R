@@ -617,11 +617,16 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
     "Responda SOMENTE com o texto da descrição enriquecida, sem introduções, títulos, ",
     "explicações ou qualquer outro texto adicional. Use o mesmo idioma da descrição atual."
   )
+  # Write the prompt to a temporary file to avoid ENAMETOOLONG errors when
+  # processx interprets a long character string as a file path for stdin.
+  prompt_file <- tempfile(fileext = ".txt")
+  on.exit(unlink(prompt_file), add = TRUE)
+  writeLines(prompt, con = prompt_file)
   # Call the deepseek-r1 snap via processx
   result <- processx::run(
     command = "deepseek-r1",
     args = c("chat"),
-    stdin = prompt,
+    stdin = prompt_file,
     error_on_status = FALSE,
     timeout = timeout
   )
