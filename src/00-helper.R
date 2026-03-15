@@ -573,8 +573,7 @@ variable_summary <- function(x, vars = NULL) {
 
 # Enrich dataset description using DeepSeek R1 ####################################################
 # This function sends the current dataset description, a summary of the processed soil variables,
-# and an optional list of additional variable names to the local deepseek-r1 inference snap via
-# its OpenAI-compatible REST API at http://localhost:8324/v3/chat/completions.
+# and an optional list of additional variable names to the local deepseek-r1 inference snap.
 # The model enriches the description by incorporating quantitative and qualitative information from
 # the summary, producing a more informative catalog entry for SoilData.
 # description: character string with the current dataset description
@@ -588,8 +587,8 @@ variable_summary <- function(x, vars = NULL) {
 #   enrich_description(dataset_description, variable_summary(ctb0093, vars = processed_vars),
 #                      additional_vars = c("dataset_id", "dataset_titulo", "dataset_licenca"))
 enrich_description <- function(description, summary_data, additional_vars = NULL, timeout = 300) {
-  if (!requireNamespace("httr2", quietly = TRUE)) {
-    warning("Package 'httr2' is not installed. Returning original description unchanged.")
+  if (!requireNamespace("processx", quietly = TRUE)) {
+    warning("Package 'processx' is not installed. Returning original description unchanged.")
     return(description)
   }
   # Format the summary data as a CSV-style plain-text table for consistent output
@@ -618,34 +617,28 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
     "Responda SOMENTE com o texto da descrição enriquecida, sem introduções, títulos, ",
     "explicações ou qualquer outro texto adicional. Use o mesmo idioma da descrição atual."
   )
-  # Call the deepseek-r1 REST API (OpenAI-compatible endpoint exposed by the snap).
-  # The deepseek-r1 chat subcommand is interactive and ignores stdin when not connected
-  # to a terminal, so we call the underlying HTTP API directly instead.
-  tryCatch({
-    resp <- httr2::request("http://localhost:8324/v3/chat/completions") |>
-      httr2::req_body_json(list(
-        model = "deepseek-r1",
-        messages = list(list(role = "user", content = prompt)),
-        stream = FALSE
-      )) |>
-      httr2::req_timeout(timeout) |>
-      httr2::req_perform()
-    body <- httr2::resp_body_json(resp)
-    if (length(body$choices) == 0L) {
-      warning("deepseek-r1 returned no choices. Returning original description unchanged.")
-      return(description)
-    }
-    enriched <- trimws(body$choices[[1]]$message$content)
-    if (nchar(enriched) == 0) {
-      warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
-      return(description)
-    }
-    return(enriched)
-  }, error = function(e) {
-    warning(
-      "deepseek-r1 API call failed: ", conditionMessage(e),
-      ". Returning original description unchanged."
-    )
+  # Write the prompt to a temporary file to avoid ENAMETOOLONG errors when
+  # processx interprets a long character string as a file path for stdin.
+  # This is equivalent to running `deepseek-r1 chat < prompt_file` in the shell.
+  prompt_file <- tempfile(fileext = ".txt")
+  on.exit(unlink(prompt_file), add = TRUE)
+  writeLines(prompt, con = prompt_file)
+  # Call the deepseek-r1 snap via processx, redirecting the prompt file as stdin
+  result <- processx::run(
+    command = "deepseek-r1",
+    args = c("chat"),
+    stdin = prompt_file,
+    error_on_status = FALSE,
+    timeout = timeout
+  )
+  if (result$status != 0) {
+    warning("deepseek-r1 returned a non-zero exit status. Returning original description unchanged.")
     return(description)
-  })
+  }
+  enriched <- trimws(result$stdout)
+  if (nchar(enriched) == 0) {
+    warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
+    return(description)
+  }
+  return(enriched)
 }
