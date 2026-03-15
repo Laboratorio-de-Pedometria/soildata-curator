@@ -57,8 +57,8 @@ Curated dataset ready for SoilData ingestion
 ### Installation
 
 ```bash
-# Install the inference snap (example)
-sudo snap install <inference-snap-name>
+# Install the silicon-optimized inference snap and pull the DeepSeek model
+bash src/install-snap.sh
 ```
 
 ### Running the curator
@@ -69,8 +69,10 @@ Instructions and scripts will be provided in this repository as development prog
 
 ```
 soildata-curator/
-├── README.md       # This file
-└── LICENSE         # MIT License
+├── src/
+│   └── install-snap.sh   # Installs the silicon-optimized inference snap
+├── README.md             # This file
+└── LICENSE               # MIT License
 ```
 
 ## Contributing
