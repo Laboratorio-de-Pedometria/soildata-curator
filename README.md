@@ -53,6 +53,7 @@ Curated dataset ready for SoilData ingestion
 - Ubuntu (latest LTS recommended)
 - [Snapd](https://snapcraft.io/docs/installing-snapd) installed and running
 - The `deepseek-r1` [inference snap](https://documentation.ubuntu.com/inference-snaps/) from Canonical
+- `curl` and `jq` – used to interact with the inference snap's REST API (installed automatically by `install-snap.sh`)
 
 ### Installation
 

@@ -39,6 +39,11 @@ if ! command -v snap &>/dev/null; then
   fi
 fi
 
+# Install curl and jq — used to interact with the inference snap's REST API
+echo "Installing curl and jq..."
+sudo apt-get update -y -qq
+sudo apt-get install -y curl jq
+
 # Install the silicon-optimized inference snap (currently in the beta channel)
 echo "Installing the ${SNAP_NAME} inference snap..."
 sudo snap install "${SNAP_NAME}" --beta
