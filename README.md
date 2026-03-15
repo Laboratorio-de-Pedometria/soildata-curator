@@ -8,8 +8,8 @@ This project explores the use of **silicon-optimized inference snaps from Ubuntu
 
 Two key capabilities are being evaluated:
 
-1. **Metadata validation** – automated checks to verify that dataset metadata is complete and conforms to the required standards.
-2. **Missing metadata inference** – AI-assisted inference of metadata fields that are absent or incomplete, using contextual information from the dataset itself.
+1. **Metadata validation** – automated checks to verify that existing metadata conforms to predefined standards.
+2. **Metadata inference and enrichment** – LLM-assisted inference of missing metadata fields, and enrichment of existing fields, based on the content of the associated data tables.
 
 ## Why silicon-optimized inference snaps?
 
@@ -27,13 +27,18 @@ Other models may be evaluated over time as the project matures.
 Soil dataset (raw)
        │
        ▼
-Metadata extraction
+Data standardization in R
        │
        ▼
-Validation checks ──► Flag / reject non-conforming entries
+Validation checks on existing metadata ──► Flag / reject non-conforming entries
        │
        ▼
-Missing metadata inference (LLM)
+LLM inference of missing metadata fields
+(based on data tables)
+       │
+       ▼
+Enrichment of existing metadata fields
+(LLM-assisted, based on data tables)
        │
        ▼
 Curated dataset ready for SoilData ingestion
