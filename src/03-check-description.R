@@ -338,13 +338,6 @@ dataset_description <- enrich_description(
   # additional_vars = additional_vars
 )
 
-tmp_file <- tempfile(fileext = ".txt")
-writeLines(prompt, tmp_file)
-cmd <- paste("deepseek-r1 chat >", tmp_file)
-capture.output(system(cmd))
-
-
-
 
 # Refactor data.table
 ctb0093_citation <- data.table::data.table(

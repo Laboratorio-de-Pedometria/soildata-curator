@@ -12,9 +12,6 @@ if (!requireNamespace("sf")) {
 if (!requireNamespace("mapview")) {
   install.packages("mapview")
 }
-if (!requireNamespace("httr2")) {
-  install.packages("httr2")
-}
 
 # Describe soil data ###############################################################################
 # This function summarizes a data.frame containing soil data.
@@ -579,22 +576,13 @@ variable_summary <- function(x, vars = NULL) {
 # description: character string with the current dataset description
 # summary_data: data.table returned by variable_summary()
 # additional_vars: character vector of variable names not covered by summary_data (default NULL)
-# timeout: maximum time in seconds to wait for deepseek-r1 to respond (default is 300)
 # Returns: character string with the enriched dataset description (same language as the input,
 #          plain text only), or the original description if the deepseek-r1 snap is unavailable
 #          or returns an error.
 # Example usage:
 #   enrich_description(dataset_description, variable_summary(ctb0093, vars = processed_vars),
 #                      additional_vars = c("dataset_id", "dataset_titulo", "dataset_licenca"))
-enrich_description <- function(description, summary_data, additional_vars = NULL, timeout = 300) {
-  for (pkg in c("processx", "httr2", "jsonlite")) {
-    if (!requireNamespace(pkg, quietly = TRUE)) {
-      warning(sprintf(
-        "Package '%s' is not installed. Returning original description unchanged.", pkg
-      ))
-      return(description)
-    }
-  }
+enrich_description <- function(description, summary_data, additional_vars = NULL) {
   # Format the summary data as a CSV-style plain-text table for consistent output
   header <- paste(names(summary_data), collapse = ", ")
   rows <- apply(summary_data, 1, function(r) paste(r, collapse = ", "))
@@ -621,81 +609,16 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
     "Responda SOMENTE com o texto da descrição enriquecida, sem introduções, títulos, ",
     "explicações ou qualquer outro texto adicional. Use o mesmo idioma da descrição atual."
   )
-  # Retrieve the local API base URL from the deepseek-r1 snap.
-  # NO_SPINNER=1 suppresses the briandowns/spinner progress animation so that the status
-  # command emits clean JSON to stdout without interleaved spinner characters.
-  env_vars <- Sys.getenv()
-  env_vars[["NO_SPINNER"]] <- "1"
-  status_result <- processx::run(
-    command = "deepseek-r1",
-    args = c("status", "--format=json"),
-    env = env_vars,
-    error_on_status = FALSE,
-    timeout = 30L
-  )
-  if (status_result$status != 0L) {
-    warning("deepseek-r1 status check failed. Returning original description unchanged.")
+  # Write the prompt to a temp file and pipe it to deepseek-r1 chat
+  tmp_file <- tempfile(fileext = ".txt")
+  on.exit(unlink(tmp_file), add = TRUE)
+  writeLines(prompt, tmp_file)
+  enriched <- system2("deepseek-r1", args = "chat", stdin = tmp_file, stdout = TRUE, stderr = FALSE)
+  if (!is.character(enriched) || length(enriched) == 0L) {
+    warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
     return(description)
   }
-  # Extract the JSON object from the status output.
-  # Any residual spinner characters that precede the '{' are safely skipped.
-  status_text <- status_result$stdout
-  json_pos <- regexpr("\\{", status_text, perl = TRUE)
-  if (json_pos == -1L) {
-    warning("deepseek-r1 status returned unexpected output. Returning original description unchanged.")
-    return(description)
-  }
-  status_data <- tryCatch(
-    jsonlite::fromJSON(substring(status_text, json_pos), simplifyVector = FALSE),
-    error = function(e) NULL
-  )
-  if (is.null(status_data) || is.null(status_data[["endpoints"]]) ||
-      is.null(status_data[["endpoints"]][["openai"]])) {
-    warning("Could not determine API endpoint from deepseek-r1 status. Returning original description unchanged.")
-    return(description)
-  }
-  api_url <- status_data[["endpoints"]][["openai"]]
-  # Ensure the base URL ends with a slash so path concatenation is correct
-  if (!endsWith(api_url, "/")) {
-    api_url <- paste0(api_url, "/")
-  }
-  # Retrieve the model name from the server's /models endpoint
-  model_name <- tryCatch({
-    models_resp <- httr2::request(paste0(api_url, "models")) |>
-      httr2::req_timeout(30L) |>
-      httr2::req_perform() |>
-      httr2::resp_body_json(simplifyVector = FALSE)
-    models_resp[["data"]][[1L]][["id"]]
-  }, error = function(e) NULL)
-  # Build the chat completion request body
-  request_body <- list(messages = list(list(role = "user", content = prompt)))
-  if (!is.null(model_name)) {
-    request_body[["model"]] <- model_name
-  }
-  # Call the OpenAI-compatible chat completions endpoint on the local snap server
-  resp <- tryCatch(
-    httr2::request(paste0(api_url, "chat/completions")) |>
-      httr2::req_body_json(request_body) |>
-      httr2::req_timeout(timeout) |>
-      httr2::req_perform(),
-    error = function(e) NULL
-  )
-  if (is.null(resp) || httr2::resp_status(resp) != 200L) {
-    warning("deepseek-r1 API call failed. Returning original description unchanged.")
-    return(description)
-  }
-  resp_data <- tryCatch(
-    httr2::resp_body_json(resp, simplifyVector = FALSE),
-    error = function(e) NULL
-  )
-  if (is.null(resp_data) || length(resp_data[["choices"]]) == 0L) {
-    warning("deepseek-r1 returned an unexpected response format. Returning original description unchanged.")
-    return(description)
-  }
-  enriched <- resp_data[["choices"]][[1L]][["message"]][["content"]]
-  # Strip any reasoning tags emitted by DeepSeek R1 before the final answer
-  enriched <- gsub("(?s)<think>.*?</think>\\s*", "", enriched, perl = TRUE)
-  enriched <- trimws(enriched)
+  enriched <- trimws(paste(enriched, collapse = "\n"))
   if (nchar(enriched) == 0L) {
     warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
     return(description)
