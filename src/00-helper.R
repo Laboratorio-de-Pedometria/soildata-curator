@@ -580,8 +580,9 @@ variable_summary <- function(x, vars = NULL) {
 # summary_data: data.table returned by variable_summary()
 # additional_vars: character vector of variable names not covered by summary_data (default NULL)
 # timeout: maximum time in seconds to wait for deepseek-r1 to respond (default is 300)
-# Returns: character string with the enriched dataset description, or the original description if
-#          the deepseek-r1 snap is unavailable or returns an error.
+# Returns: character string with the enriched dataset description (same language as the input,
+#          plain text only), or the original description if the deepseek-r1 snap is unavailable
+#          or returns an error.
 # Example usage:
 #   enrich_description(dataset_description, variable_summary(ctb0093, vars = processed_vars),
 #                      additional_vars = c("dataset_id", "dataset_titulo", "dataset_licenca"))
@@ -613,9 +614,8 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
     "Descrição atual:\n", description, "\n\n",
     "Sumário das variáveis de solo processadas:\n", summary_text,
     additional_text, "\n\n",
-    "Forneça uma descrição enriquecida em português, mantendo o estilo e o nível de detalhe ",
-    "da descrição original, mas incorporando as informações quantitativas e qualitativas ",
-    "relevantes do sumário."
+    "Responda SOMENTE com o texto da descrição enriquecida, sem introduções, títulos, ",
+    "explicações ou qualquer outro texto adicional. Use o mesmo idioma da descrição atual."
   )
   # Call the deepseek-r1 snap via processx
   result <- processx::run(
