@@ -309,17 +309,18 @@ dataset_description <- ctb0093_citation[campo == "Descrição dos dados", valor]
 
 # Define the soil variables explicitly processed in the event and layer sections of this script
 event_vars <- c(
-  "observacao_id", "data_ano", "ano_fonte",
-  "coord_x", "coord_y", "coord_datum", "coord_fonte", "coord_precisao",
-  "pais_id", "estado_id", "municipio_id",
-  "amostra_area",
-  "taxon_sibcs", "taxon_st", "pedregosidade", "rochosidade"
+  # "observacao_id", "data_ano", "ano_fonte",
+  # "coord_x", "coord_y", "coord_datum", "coord_fonte", "coord_precisao",
+  "pais_id", "estado_id", "municipio_id"
+  # "amostra_area",
+  # "taxon_sibcs", "taxon_st", "pedregosidade", "rochosidade"
 )
 layer_vars <- c(
-  "camada_nome", "amostra_id", "camada_id",
+  # "camada_nome", "amostra_id", "camada_id",
   "profund_sup", "profund_inf",
-  "terrafina", "areia", "silte", "argila",
-  "carbono", "ph", "ctc", "dsi"
+  # "terrafina", "areia", "silte", "argila",
+  "carbono"
+  # "ph", "ctc", "dsi"
 )
 
 # Compute summary of the processed soil variables (quantitative and qualitative)
@@ -335,9 +336,9 @@ additional_vars <- setdiff(names(ctb0093), c(processed_vars, "mid_depth"))
 dataset_description <- enrich_description(
   description = dataset_description,
   summary_data = dataset_summary,
+  model = "qwen-vl"
   # additional_vars = additional_vars
 )
-
 
 # Refactor data.table
 ctb0093_citation <- data.table::data.table(
@@ -346,7 +347,6 @@ ctb0093_citation <- data.table::data.table(
   dataset_licenca = dataset_licenca
 )
 print(ctb0093_citation)
-
 
 # citation
 ctb0093 <- merge(ctb0093, ctb0093_citation, by = "dataset_id", all.x = TRUE)

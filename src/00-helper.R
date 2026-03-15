@@ -582,7 +582,7 @@ variable_summary <- function(x, vars = NULL) {
 # Example usage:
 #   enrich_description(dataset_description, variable_summary(ctb0093, vars = processed_vars),
 #                      additional_vars = c("dataset_id", "dataset_titulo", "dataset_licenca"))
-enrich_description <- function(description, summary_data, additional_vars = NULL) {
+enrich_description <- function(description, summary_data, additional_vars = NULL, model = "qwen-vl") {
   # Format the summary data as a CSV-style plain-text table for consistent output
   header <- paste(names(summary_data), collapse = ", ")
   rows <- apply(summary_data, 1, function(r) paste(r, collapse = ", "))
@@ -613,14 +613,14 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
   tmp_file <- tempfile(fileext = ".txt")
   on.exit(unlink(tmp_file), add = TRUE)
   writeLines(prompt, tmp_file)
-  enriched <- system2("deepseek-r1", args = "chat", stdin = tmp_file, stdout = TRUE, stderr = FALSE)
+  enriched <- system2(model, args = "chat", stdin = tmp_file, stdout = TRUE, stderr = FALSE)
   if (!is.character(enriched) || length(enriched) == 0L) {
-    warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
+    warning(paste(model, "returned an empty response. Returning original description unchanged."))
     return(description)
   }
   enriched <- trimws(paste(enriched, collapse = "\n"))
   if (nchar(enriched) == 0L) {
-    warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
+    warning(paste(model, "returned an empty response. Returning original description unchanged."))
     return(description)
   }
   return(enriched)
