@@ -2,16 +2,23 @@
 # 02-install-r-packages.R
 # Installs the R packages required to interact with the local inference snap.
 #
-# The deepseek-r1 snap ships its own silicon-optimized runtime and is invoked
-# directly through its command-line interface (e.g. `deepseek-r1 chat`).
-# No separate Ollama installation or REST API is required.
+# The deepseek-r1 snap ships its own silicon-optimized runtime and exposes a
+# local OpenAI-compatible REST API. The API endpoint is discovered at runtime
+# via `deepseek-r1 status --format=json`, and requests are sent directly to
+# it — no cloud connection or separate Ollama installation is required.
 #
-# The processx package is used to call the snap CLI from R:
+# The packages used are:
 #
-#   processx  – spawn and control external processes from R, used here to send
-#               prompts to the deepseek-r1 snap and capture its output.
+#   processx  – spawn and control external processes from R, used here to call
+#               `deepseek-r1 status --format=json` and capture the API URL.
 #
-# processx is available on CRAN.
+#   httr2     – modern HTTP client for R, used to call the snap's local
+#               OpenAI-compatible REST API.
+#
+#   jsonlite  – JSON parser, used to decode the status output and the API
+#               response from the local inference server.
+#
+# All packages are available on CRAN.
 #
 # Requirements:
 #   - R (>= 4.0.0)
@@ -21,9 +28,11 @@
 # Usage:
 #   Rscript src/02-install-r-packages.R
 
-# Package required to call the deepseek-r1 snap CLI directly from R
+# Packages required to interact with the deepseek-r1 inference snap
 pkgs <- c(
-  "processx"  # Spawn and control the snap process, capture its output
+  "processx",  # Spawn and control snap processes, capture their output
+  "httr2",     # HTTP client for calling the snap's local REST API
+  "jsonlite"   # JSON parsing for snap status output and API responses
 )
 
 # Install only packages that are not yet available in the current R library
