@@ -18,11 +18,25 @@ set -euo pipefail
 
 SNAP_NAME="deepseek-r1"
 
-# Verify that snapd is available
+# Verify that snapd is available; attempt to install it if missing
 if ! command -v snap &>/dev/null; then
-  echo "Error: snapd is not installed or not in PATH." >&2
-  echo "Please install snapd first: https://snapcraft.io/docs/installing-snapd" >&2
-  exit 1
+  echo "snapd is not installed or not in PATH. Attempting to install snapd..."
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -y
+    sudo apt-get install -y snapd
+    # Add snap to PATH for the current session only; users may need to restart their
+    # shell or add /snap/bin to their shell profile for this to persist across sessions.
+    export PATH="${PATH}:/snap/bin"
+    if ! command -v snap &>/dev/null; then
+      echo "Error: snapd installation failed." >&2
+      echo "Please install snapd manually: https://snapcraft.io/docs/installing-snapd" >&2
+      exit 1
+    fi
+  else
+    echo "Error: Cannot install snapd automatically on this system." >&2
+    echo "Please install snapd first: https://snapcraft.io/docs/installing-snapd" >&2
+    exit 1
+  fi
 fi
 
 # Install the silicon-optimized inference snap (currently in the beta channel)
