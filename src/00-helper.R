@@ -496,3 +496,92 @@ check_depth_inversion <- function(data) {
   }
   return(invisible(inverted_depths))
 }
+
+# Compute numerical summary of dataset variables ###################################################
+# This function computes a numerical summary of the numeric variables in a data.table containing
+# soil data. For each numeric column it calculates the total number of observations, the number of
+# missing values, the minimum, the first quartile, the median, the mean, the third quartile, and
+# the maximum.
+# x: data.table containing soil data
+# Returns: data.table with summary statistics for each numeric variable, with columns:
+#   variable, n, n_na, min, q25, median, mean, q75, max
+# Example usage: numeric_summary(ctb0093)
+numeric_summary <- function(x) {
+  # Identify numeric columns
+  numeric_cols <- names(x)[sapply(x, is.numeric)]
+  # Compute summary statistics for each numeric column
+  stats <- lapply(numeric_cols, function(col) {
+    vals <- x[[col]]
+    n_total <- length(vals)
+    n_na <- sum(is.na(vals))
+    n_valid <- n_total - n_na
+    if (n_valid == 0) {
+      return(data.table::data.table(
+        variable = col, n = n_total, n_na = n_na,
+        min = NA_real_, q25 = NA_real_, median = NA_real_,
+        mean = NA_real_, q75 = NA_real_, max = NA_real_
+      ))
+    }
+    vals_nona <- vals[!is.na(vals)]
+    data.table::data.table(
+      variable = col,
+      n = n_total,
+      n_na = n_na,
+      min = round(min(vals_nona), 2),
+      q25 = round(as.numeric(quantile(vals_nona, 0.25)), 2),
+      median = round(median(vals_nona), 2),
+      mean = round(mean(vals_nona), 2),
+      q75 = round(as.numeric(quantile(vals_nona, 0.75)), 2),
+      max = round(max(vals_nona), 2)
+    )
+  })
+  result <- data.table::rbindlist(stats)
+  return(result)
+}
+
+# Enrich dataset description using DeepSeek R1 ####################################################
+# This function sends the current dataset description together with a numerical summary of the
+# variables to the local deepseek-r1 inference snap. The model enriches the description by
+# incorporating quantitative information from the summary, producing a more informative catalog
+# entry for SoilData.
+# description: character string with the current dataset description
+# summary_data: data.table returned by numeric_summary()
+# timeout: maximum time in seconds to wait for deepseek-r1 to respond (default is 300)
+# Returns: character string with the enriched dataset description, or the original description if
+#          the deepseek-r1 snap is unavailable or returns an error.
+# Example usage: enrich_description(dataset_description, numeric_summary(ctb0093))
+enrich_description <- function(description, summary_data, timeout = 300) {
+  if (!requireNamespace("processx", quietly = TRUE)) {
+    warning("Package 'processx' is not installed. Returning original description unchanged.")
+    return(description)
+  }
+  # Format the summary data as a CSV-style plain-text table for consistent output
+  header <- paste(names(summary_data), collapse = ", ")
+  rows <- apply(summary_data, 1, function(r) paste(r, collapse = ", "))
+  summary_text <- paste(c(header, rows), collapse = "\n")
+  # Build the prompt
+  prompt <- paste0(
+    "Você é um especialista em pedologia e catalogação de dados de solos. ",
+    "A seguir, você receberá a descrição atual de um conjunto de dados de solos e um sumário ",
+    "numérico das variáveis disponíveis. Sua tarefa é enriquecer a descrição atual com base ",
+    "no sumário numérico, produzindo uma descrição mais completa e informativa para ",
+    "catalogação no repositório SoilData.\n\n",
+    "Descrição atual:\n", description, "\n\n",
+    "Sumário numérico das variáveis:\n", summary_text, "\n\n",
+    "Forneça uma descrição enriquecida em português, mantendo o estilo e o nível de detalhe ",
+    "da descrição original, mas incorporando as informações quantitativas relevantes do sumário."
+  )
+  # Call the deepseek-r1 snap via processx
+  result <- processx::run(
+    command = "deepseek-r1",
+    args = c("chat"),
+    stdin = prompt,
+    error_on_status = FALSE,
+    timeout = timeout
+  )
+  if (result$status != 0) {
+    warning("deepseek-r1 returned a non-zero exit status. Returning original description unchanged.")
+    return(description)
+  }
+  return(trimws(result$stdout))
+}

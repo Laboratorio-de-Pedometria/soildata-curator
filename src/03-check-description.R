@@ -306,8 +306,12 @@ dataset_licenca <- ctb0093_citation[campo == "Termos de uso", valor]
 # column "valor".
 dataset_description <- ctb0093_citation[campo == "Descrição dos dados", valor]
 
+# Compute numerical summary of the dataset variables
+dataset_summary <- numeric_summary(ctb0093)
+print(dataset_summary)
 
-
+# Enrich the dataset description using deepseek-r1
+dataset_description <- enrich_description(dataset_description, dataset_summary)
 
 
 # Refactor data.table
