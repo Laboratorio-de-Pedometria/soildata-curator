@@ -2,27 +2,28 @@
 # 02-install-r-packages.R
 # Installs the R packages required to interact with the local inference snap.
 #
-# The deepseek-r1 snap runs a local Ollama-compatible inference server on the
-# machine.  The ellmer package provides a high-level R interface for sending
-# prompts and receiving responses from local LLM inference engines:
+# The deepseek-r1 snap ships its own silicon-optimized runtime and is invoked
+# directly through its command-line interface (e.g. `deepseek-r1 chat`).
+# No separate Ollama installation or REST API is required.
 #
-#   ellmer  – unified R interface for local and cloud LLMs; chat_ollama() is
-#             the entry point for Ollama-compatible local inference servers
-#             such as the deepseek-r1 snap.
+# The processx package is used to call the snap CLI from R:
 #
-# ellmer is available on CRAN.
+#   processx  – spawn and control external processes from R, used here to send
+#               prompts to the deepseek-r1 snap and capture its output.
+#
+# processx is available on CRAN.
 #
 # Requirements:
-#   - R (>= 4.1.0)
+#   - R (>= 4.0.0)
 #   - Internet access to reach a CRAN mirror (only needed during installation)
-#   - The deepseek-r1 inference snap running locally (see src/01-install-snap.sh)
+#   - The deepseek-r1 inference snap installed locally (see src/01-install-snap.sh)
 #
 # Usage:
 #   Rscript src/02-install-r-packages.R
 
-# Package required to interact with the local Ollama-compatible inference snap
+# Package required to call the deepseek-r1 snap CLI directly from R
 pkgs <- c(
-  "ellmer"  # High-level R interface for local and cloud LLM inference engines
+  "processx"  # Spawn and control the snap process, capture its output
 )
 
 # Install only packages that are not yet available in the current R library
