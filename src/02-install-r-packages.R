@@ -1,27 +1,28 @@
 #!/usr/bin/env Rscript
 # 02-install-r-packages.R
-# Installs the R packages required to connect with the inference snap.
+# Installs the R packages required to interact with the local inference snap.
 #
-# The deepseek-r1 snap exposes an OpenAI-compatible REST API.  Two packages
-# are sufficient to interact with it from R:
+# The deepseek-r1 snap runs a local Ollama-compatible inference server on the
+# machine.  The ellmer package provides a high-level R interface for sending
+# prompts and receiving responses from local LLM inference engines:
 #
-#   httr      – send HTTP requests (GET/POST) to the API endpoint
-#   jsonlite  – encode request bodies and decode JSON responses
+#   ellmer  – unified R interface for local and cloud LLMs; chat_ollama() is
+#             the entry point for Ollama-compatible local inference servers
+#             such as the deepseek-r1 snap.
 #
-# Neither package belongs to the tidyverse.  Both are available on CRAN and
-# have minimal dependency trees, keeping the installation lightweight.
+# ellmer is available on CRAN.
 #
 # Requirements:
-#   - R (>= 4.0.0)
+#   - R (>= 4.1.0)
 #   - Internet access to reach a CRAN mirror (only needed during installation)
+#   - The deepseek-r1 inference snap running locally (see src/01-install-snap.sh)
 #
 # Usage:
 #   Rscript src/02-install-r-packages.R
 
-# Packages strictly required to communicate with the inference snap REST API
+# Package required to interact with the local Ollama-compatible inference snap
 pkgs <- c(
-  "httr",     # HTTP/1.1 client — POST to /v1/chat/completions, etc.
-  "jsonlite"  # Fast, standards-compliant JSON encoder/decoder
+  "ellmer"  # High-level R interface for local and cloud LLM inference engines
 )
 
 # Install only packages that are not yet available in the current R library
