@@ -17,7 +17,7 @@ Two key capabilities are being evaluated:
 
 ## Models
 
-We are starting with **[DeepSeek](https://www.deepseek.com/)**, a high-performance open-weight language model well-suited for structured data understanding and text generation tasks.
+We are starting with **[DeepSeek R1](https://www.deepseek.com/)**, a high-performance open-weight reasoning model well-suited for structured data understanding and text generation tasks. It is available as the [`deepseek-r1`](https://snapcraft.io/deepseek-r1) Canonical inference snap, which bundles the silicon-optimized runtime and model weights together.
 
 Other models may be evaluated over time as the project matures.
 
@@ -52,12 +52,12 @@ Curated dataset ready for SoilData ingestion
 
 - Ubuntu (latest LTS recommended)
 - [Snapd](https://snapcraft.io/docs/installing-snapd) installed and running
-- An inference snap for your target model (e.g., DeepSeek)
+- The `deepseek-r1` [inference snap](https://documentation.ubuntu.com/inference-snaps/) from Canonical
 
 ### Installation
 
 ```bash
-# Install the silicon-optimized inference snap and pull the DeepSeek model
+# Install the deepseek-r1 silicon-optimized inference snap
 bash src/install-snap.sh
 ```
 

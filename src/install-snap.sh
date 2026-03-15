@@ -1,19 +1,22 @@
 #!/bin/bash
 # install-snap.sh
-# Installs the silicon-optimized inference snap (ollama) and pulls the
-# DeepSeek model for use in the soildata-curator pipeline.
+# Installs the deepseek-r1 silicon-optimized inference snap from Canonical.
+# The snap bundles the DeepSeek R1 reasoning model together with a
+# hardware-optimized runtime — no separate model download is required.
 #
 # Requirements:
 #   - Ubuntu (latest LTS recommended)
 #   - snapd installed and running (https://snapcraft.io/docs/installing-snapd)
+#
+# Documentation:
+#   https://documentation.ubuntu.com/inference-snaps/
 #
 # Usage:
 #   bash src/install-snap.sh
 
 set -euo pipefail
 
-SNAP_NAME="ollama"
-MODEL_NAME="deepseek-r1"
+SNAP_NAME="deepseek-r1"
 
 # Verify that snapd is available
 if ! command -v snap &>/dev/null; then
@@ -22,21 +25,19 @@ if ! command -v snap &>/dev/null; then
   exit 1
 fi
 
-# Install the silicon-optimized inference snap
+# Install the silicon-optimized inference snap (currently in the beta channel)
 echo "Installing the ${SNAP_NAME} inference snap..."
-sudo snap install "${SNAP_NAME}"
-
-# Pull the DeepSeek model
-echo "Pulling the ${MODEL_NAME} model (this may take a while)..."
-ollama pull "${MODEL_NAME}"
+sudo snap install "${SNAP_NAME}" --beta
 
 echo ""
 echo "Setup complete."
 echo "  Snap installed : ${SNAP_NAME}"
-echo "  Model ready    : ${MODEL_NAME}"
 echo ""
 echo "To verify the installation, run:"
-echo "  ollama list"
+echo "  ${SNAP_NAME} --help"
 echo ""
-echo "To start an interactive session with the model, run:"
-echo "  ollama run ${MODEL_NAME}"
+echo "To check the status of the model, run:"
+echo "  ${SNAP_NAME} status"
+echo ""
+echo "To start an interactive chat session, run:"
+echo "  ${SNAP_NAME} chat"
