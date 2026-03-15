@@ -619,10 +619,11 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
   )
   # Write the prompt to a temporary file to avoid ENAMETOOLONG errors when
   # processx interprets a long character string as a file path for stdin.
+  # This is equivalent to running `deepseek-r1 chat < prompt_file` in the shell.
   prompt_file <- tempfile(fileext = ".txt")
   on.exit(unlink(prompt_file), add = TRUE)
   writeLines(prompt, con = prompt_file)
-  # Call the deepseek-r1 snap via processx
+  # Call the deepseek-r1 snap via processx, redirecting the prompt file as stdin
   result <- processx::run(
     command = "deepseek-r1",
     args = c("chat"),
@@ -634,5 +635,10 @@ enrich_description <- function(description, summary_data, additional_vars = NULL
     warning("deepseek-r1 returned a non-zero exit status. Returning original description unchanged.")
     return(description)
   }
-  return(trimws(result$stdout))
+  enriched <- trimws(result$stdout)
+  if (nchar(enriched) == 0) {
+    warning("deepseek-r1 returned an empty response. Returning original description unchanged.")
+    return(description)
+  }
+  return(enriched)
 }
