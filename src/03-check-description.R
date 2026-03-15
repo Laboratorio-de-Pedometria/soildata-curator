@@ -339,8 +339,6 @@ dataset_description <- enrich_description(
 )
 
 
-
-
 # Refactor data.table
 ctb0093_citation <- data.table::data.table(
   dataset_id = "ctb0093",
