@@ -321,6 +321,21 @@ layer_vars <- c(
   "carbono", "ph", "ctc", "dsi"
 )
 
+# Compute summary of the processed soil variables (quantitative and qualitative)
+processed_vars <- c(event_vars, layer_vars)
+dataset_summary <- variable_summary(ctb0093, vars = processed_vars)
+print(dataset_summary)
+
+# List the additional variables in the merged dataset not processed in the event or layer sections.
+# mid_depth is excluded because it is an intermediate computation used only for ordering.
+additional_vars <- setdiff(names(ctb0093), c(processed_vars, "mid_depth"))
+
+# Enrich the dataset description using deepseek-r1
+dataset_description <- enrich_description(dataset_description, dataset_summary, additional_vars)
+
+
+
+
 
 # Refactor data.table
 ctb0093_citation <- data.table::data.table(
@@ -337,19 +352,6 @@ summary_soildata(ctb0093)
 # Layers: 759
 # Events: 373
 # Georeferenced events: 370
-
-# Compute summary of the processed soil variables (quantitative and qualitative)
-processed_vars <- c(event_vars, layer_vars)
-dataset_summary <- variable_summary(ctb0093, vars = processed_vars)
-print(dataset_summary)
-
-# List the additional variables in the merged dataset not processed in the event or layer sections.
-# mid_depth is excluded because it is an intermediate computation used only for ordering.
-additional_vars <- setdiff(names(ctb0093), c(processed_vars, "mid_depth"))
-
-# Enrich the dataset description using deepseek-r1
-dataset_description <- enrich_description(dataset_description, dataset_summary, additional_vars)
-
 
 # Write to disk ####################################################################################
 ctb0093 <- select_output_columns(ctb0093)
