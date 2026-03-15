@@ -1,5 +1,6 @@
 # autor: Felipe Brun Vergani and Alessandro Samuel-Rosa
 # data: 2025
+rm(list = ls())
 
 # Source helper functions and packages
 source("src/00-helper.R")
@@ -332,7 +333,9 @@ additional_vars <- setdiff(names(ctb0093), c(processed_vars, "mid_depth"))
 
 # Enrich the dataset description using deepseek-r1
 dataset_description <- enrich_description(
-  description = dataset_description, summary_data = dataset_summary, additional_vars = additional_vars
+  description = dataset_description,
+  summary_data = dataset_summary,
+  # additional_vars = additional_vars
 )
 
 
