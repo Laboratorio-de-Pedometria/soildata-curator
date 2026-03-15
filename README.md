@@ -57,8 +57,11 @@ Curated dataset ready for SoilData ingestion
 ### Installation
 
 ```bash
-# Install the deepseek-r1 silicon-optimized inference snap
+# Step 1 – Install the deepseek-r1 silicon-optimized inference snap
 bash src/install-snap.sh
+
+# Step 2 – Install the R packages needed to connect with the inference snap
+Rscript src/02-install-r-packages.R
 ```
 
 ### Running the curator
@@ -70,9 +73,10 @@ Instructions and scripts will be provided in this repository as development prog
 ```
 soildata-curator/
 ├── src/
-│   └── install-snap.sh   # Installs the silicon-optimized inference snap
-├── README.md             # This file
-└── LICENSE               # MIT License
+│   ├── install-snap.sh          # Step 1 – Installs the silicon-optimized inference snap
+│   └── 02-install-r-packages.R  # Step 2 – Installs R packages to connect with the snap
+├── README.md                    # This file
+└── LICENSE                      # MIT License
 ```
 
 ## Contributing
