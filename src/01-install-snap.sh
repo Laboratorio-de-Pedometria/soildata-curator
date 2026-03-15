@@ -16,7 +16,9 @@
 
 set -euo pipefail
 
-SNAP_NAME="deepseek-r1"
+# SNAP_NAME="deepseek-r1"
+# SNAP_NAME="nemotron-3-nano"
+SNAP_NAME="qwen-vl"
 
 # Verify that snapd is available; attempt to install it if missing
 if ! command -v snap &>/dev/null; then
